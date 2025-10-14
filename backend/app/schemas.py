@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List
 
 # ============== VOKABELN ==============
 class VocabItemBase(BaseModel):
@@ -14,7 +14,7 @@ class VocabItem(VocabItemBase):
     vocab_list_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # ============== VOKABELLISTEN ==============
@@ -22,15 +22,15 @@ class VocabListBase(BaseModel):
     name:str
 
 class VocabListCreate(VocabListBase):
-    user_id: int
-
+    pass
+    
 class VocabList(VocabListBase):
     id: int
     user_id: int
     vocab_items: List[VocabItem] = []
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # ============== USER ==============
@@ -42,8 +42,7 @@ class UserCreate(UserBase):
 
 class User(UserBase):
     id: int
-    password: str
     lists: List[VocabList] = []
 
     class Config:
-        orm_mode = True
+        from_attributes = True

@@ -1,6 +1,8 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app import schemas, crud, database
+from app.routes.user import get_current_user
+from app.models import User
 
 router = APIRouter()
 
@@ -14,10 +16,17 @@ def get_db():
 # ============== VokabelListe ==============
 # Post new
 @router.post("/vocablist/", response_model=schemas.VocabList)
-def create_vocablist(item: schemas.VocabListCreate, db: Session = Depends(get_db)):
-    return crud.create_vocab_list(db, item)
+def create_vocablist(
+    item: schemas.VocabListCreate, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+    ):
+    return crud.create_vocab_list(db, item, current_user.id)
 
 # Get All
 @router.get("/vocablist/", response_model=list[schemas.VocabList])
-def read_vocablist(db: Session = Depends(get_db)):
-    return crud.get_vocab_list(db)
+def read_vocablist(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+    ):
+    return crud.get_vocab_list(db, current_user.id)

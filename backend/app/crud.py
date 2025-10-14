@@ -31,15 +31,15 @@ def get_user(db: Session, user_id: int):
 
 
 # ============== VOKABELLISTEN ==============
-def create_vocab_list(db: Session, name:str, user_id: int):
+def create_vocab_list(db: Session, vocablist_data: schemas.VocabListCreate, user_id: int):
     """
     Erstellt eine neue Vokabellist für einen User.
     """
-    new_list = models.VocabList(name=name, user_id=user_id)
-    db.add(new_list)
+    vocab_list = models.VocabList(name=vocablist_data.name, user_id=user_id)
+    db.add(vocab_list)
     db.commit()
-    db.refresh(new_list)
-    return new_list
+    db.refresh(vocab_list)
+    return vocab_list
 
 def get_vocab_list(db: Session, user_id: int):
     """
