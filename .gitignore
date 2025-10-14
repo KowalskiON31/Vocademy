@@ -1,0 +1,26 @@
+# === Python ===
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# === Virtual Environment ===
+venv/
+
+# === Environment Variables ===
+.env
+
+# === SQLite Database ===
+*.db
+
+# === Node / Frontend ===
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+
+# === VSCode ===
+.vscode/
+
+# === OS files ===
+.DS_Store
+Thumbs.db
