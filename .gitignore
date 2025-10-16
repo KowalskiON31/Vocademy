@@ -1,18 +1,61 @@
-# Virtual environments
-venv/
-*/venv/
-
-# Env files
-.env
-.env.*
-
-# Python cache
+# =========================
+# 🔹 Python Backend
+# =========================
 __pycache__/
 *.py[cod]
 *.pyo
+*.pyd
+*.so
+*.egg-info/
+*.log
+*.sqlite3
+*.db
 
-# IDE / OS files
-.vscode/
-.idea/
+# Virtual environments
+venv/
+env/
+*/venv/
+*/env/
+
+# Environment files
+.env
+.env.*
+
+# =========================
+# 🔹 Node / Frontend
+# =========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+package-lock.json
+
+# Frontend build output
+frontend/dist/
+frontend/build/
+frontend/.vite/
+frontend/.next/
+frontend/.nuxt/
+frontend/out/
+
+# =========================
+# 🔹 OS & Editor Files
+# =========================
+.DS_Store
 Thumbs.db
 Desktop.ini
+
+# IDE settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# =========================
+# 🔹 Misc
+# =========================
+# Local test / temp data
+*.bak
+*.tmp
+*.log
