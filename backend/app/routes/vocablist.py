@@ -64,3 +64,57 @@ def read_vocablist(
         raise HTTPException(status_code=404, detail="User nicht gefunden")
     
     return crud.get_vocab_list_by_user(db, user.id)
+
+
+# Update List
+@router.put("/vocablist/{vocab_id}", response_model=schemas.VocabList)
+def update_vocablist(
+    vocab_id: int,
+    item: schemas.VocabListCreate,
+    db: Session = Depends(get_db),
+    token: str = Depends(oauth2_scheme)
+    ):
+    username = verify_access_token(token)
+    if not username:
+        raise HTTPException(status_code=404, detail="User nicht gefunden")
+    
+    user = db.query(models.User).filter(models.User.username == username).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User nicht gefunden")
+    
+    vocab_list = crud.get_vocab_list(db, vocab_id)
+    if not vocab_list:
+        raise HTTPException(status_code=404, detail="Vokabelliste nicht gefunden")
+    if vocab_list.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Keine Berechtigung für diese Liste")
+    
+    vocab_list.name = item.name
+    db.commit()
+    db.refresh(vocab_list)
+    return vocab_list
+
+
+# Delete List
+@router.delete("/vocablist/{vocab_id}")
+def delete_vocablist(
+    vocab_id: int,
+    db: Session = Depends(get_db),
+    token: str = Depends(oauth2_scheme)
+    ):
+    username = verify_access_token(token)
+    if not username:
+        raise HTTPException(status_code=404, detail="User nicht gefunden")
+    
+    user = db.query(models.User).filter(models.User.username == username).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User nicht gefunden")
+    
+    vocab_list = crud.get_vocab_list(db, vocab_id)
+    if not vocab_list:
+        raise HTTPException(status_code=404, detail="Vokabelliste nicht gefunden")
+    if vocab_list.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Keine Berechtigung für diese Liste")
+    
+    db.delete(vocab_list)
+    db.commit()
+    return {"message": "Vokabelliste wurde gelöscht"}

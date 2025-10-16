@@ -114,26 +114,88 @@ def get_vocab_list(db: Session, vocablist_id: int):
     return db.query(models.VocabList).filter(models.VocabList.id == vocablist_id).first()
 
 
-def get_all_vocabt_items(db: Session):
-    return db.query(models.VocabItem).all()
+def get_vocab_list_entries(db: Session, list_ids: list[int]):
+    from sqlalchemy.orm import joinedload
+    return db.query(models.VocabEntry).options(joinedload(models.VocabEntry.translations)).filter(models.VocabEntry.vocab_list_id.in_(list_ids)).all()
 
-# ============== VOKABELN ==============
-def create_vocab_item(db: Session, item: schemas.VocabItemCreate):
+# ============== VOKABELN (ENTRIES) ==============
+def create_vocab_entry(db: Session, data: schemas.VocabEntryCreate):
     """
-    Erstellt eine neue Vokabel in einer bestimmten Liste.
+    Erstellt einen Vokabeleintrag mit optionalen Übersetzungen.
     """
-    vocab = models.VocabItem(
-        word=item.word,
-        translation=item.translation,
-        vocab_list_id=item.vocab_list_id
+    entry = models.VocabEntry(
+        term=data.term,
+        source_language=data.source_language or "de",
+        vocab_list_id=data.vocab_list_id,
     )
-    db.add(vocab)
-    db.commit()
-    db.refresh(vocab)
-    return vocab
+    
+    db.add(entry)
+    db.flush()  # Flush to get the entry ID
+    
+    if data.translations:
+        for t in data.translations:
+            translation = models.VocabTranslation(text=t.text, language=t.language, entry_id=entry.id)
+            db.add(translation)
 
-def get_all_vocab_items(db: Session):
-    """
-    Gibt alle Vokabeln in der Datenbank aus.
-    """
-    return db.query(models.VocabItem).all()
+    db.commit()
+    db.refresh(entry)
+    return entry
+
+
+def get_vocab_entry(db: Session, entry_id: int):
+    from sqlalchemy.orm import joinedload
+    return db.query(models.VocabEntry).options(joinedload(models.VocabEntry.translations)).filter(models.VocabEntry.id == entry_id).first()
+
+
+def update_vocab_entry(db: Session, entry_id: int, updated: schemas.VocabEntryUpdate):
+    entry = get_vocab_entry(db, entry_id)
+    if not entry:
+        return None
+    if updated.term is not None and updated.term.strip():
+        entry.term = updated.term.strip()
+    if updated.source_language is not None and updated.source_language.strip():
+        entry.source_language = updated.source_language.strip()
+    db.commit()
+    db.refresh(entry)
+    return entry
+
+
+def delete_vocab_entry(db: Session, entry_id: int):
+    entry = get_vocab_entry(db, entry_id)
+    if not entry:
+        return False
+    db.delete(entry)
+    db.commit()
+    return True
+
+
+# ============== TRANSLATIONS ==============
+def add_translation(db: Session, entry_id: int, t: schemas.VocabTranslationCreate):
+    entry = get_vocab_entry(db, entry_id)
+    if not entry:
+        return None
+    trans = models.VocabTranslation(text=t.text, language=t.language, entry=entry)
+    db.add(trans)
+    db.commit()
+    db.refresh(trans)
+    return trans
+
+
+def update_translation(db: Session, translation_id: int, t: schemas.VocabTranslationCreate):
+    trans = db.query(models.VocabTranslation).filter(models.VocabTranslation.id == translation_id).first()
+    if not trans:
+        return None
+    trans.text = t.text
+    trans.language = t.language
+    db.commit()
+    db.refresh(trans)
+    return trans
+
+
+def delete_translation(db: Session, translation_id: int):
+    trans = db.query(models.VocabTranslation).filter(models.VocabTranslation.id == translation_id).first()
+    if not trans:
+        return False
+    db.delete(trans)
+    db.commit()
+    return True

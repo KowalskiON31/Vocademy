@@ -2,16 +2,37 @@ from pydantic import BaseModel
 from typing import List, Optional
 
 # ============== VOKABELN ==============
-class VocabItemBase(BaseModel):
-    word: str
-    translation: str
+class VocabTranslationBase(BaseModel):
+    text: str
+    language: str
 
-class VocabItemCreate(VocabItemBase):
-    vocab_list_id: int
+class VocabTranslationCreate(VocabTranslationBase):
+    pass
 
-class VocabItem(VocabItemBase):
-    id:int
+class VocabTranslation(VocabTranslationBase):
+    id: int
+    entry_id: int
+
+    class Config:
+        from_attributes = True
+
+
+class VocabEntryBase(BaseModel):
+    term: str
+    source_language: Optional[str] = "de"
+
+class VocabEntryCreate(VocabEntryBase):
     vocab_list_id: int
+    translations: Optional[List[VocabTranslationCreate]] = None
+
+class VocabEntryUpdate(BaseModel):
+    term: Optional[str] = None
+    source_language: Optional[str] = None
+
+class VocabEntry(VocabEntryBase):
+    id: int
+    vocab_list_id: int
+    translations: List[VocabTranslation] = []
 
     class Config:
         from_attributes = True
@@ -27,7 +48,7 @@ class VocabListCreate(VocabListBase):
 class VocabList(VocabListBase):
     id: int
     user_id: int
-    vocab_items: List[VocabItem] = []
+    entries: List[VocabEntry] = []
 
     class Config:
         from_attributes = True
@@ -47,6 +68,8 @@ class UserUpdate(BaseModel):
     
 class User(UserBase):
     id: int
+    role: str
+    is_active: bool
     lists: List[VocabList] = []
 
     class Config:
