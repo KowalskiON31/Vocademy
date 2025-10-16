@@ -1,8 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from app import schemas, crud, database, models
-from app.auth import verify_password, create_access_token, verify_access_token
+from app.auth import (
+    verify_password, create_access_token,
+    get_current_user_from_token, admin_required
+)
 
 router = APIRouter()
 
@@ -13,55 +16,75 @@ def get_db():
     finally:
         db.close()
 
-# ============== User ==============
-# Post new
+
+# ============== Register & Login ==============
 @router.post("/register/", response_model=schemas.User)
 def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     return crud.create_user(db, user)
 
-# Login
+
 @router.post("/login/")
-def login(from_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.username == from_data.username).first()
-    
-    if not user or not verify_password(from_data.password, user.password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Ungülter Benutzername oder Passwort"
-        )
-        
-    acces_token = create_access_token(data={"sub": user.username})
-    return {"access_token": acces_token, "token_type": "bearer"}
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = crud.get_user_by_username(db, form_data.username)
+    if not user or not verify_password(form_data.password, user.password):
+        raise HTTPException(status_code=401, detail="Ungültiger Benutzername oder Passwort")
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login/")
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="Benutzerkonto ist deaktiviert")
 
-@router.get("/me/")
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    username = verify_access_token(token)
-    if not username:
-        raise HTTPException(status_code=401, detail="Ungültiger oder abgelaufender Token")
-    
-    user = db.query(models.User).filter(models.User.username == username).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="Benutzer nicht gefunden")
-    
-    return user
+    access_token = create_access_token(data={"sub": user.username})
+    return {"access_token": access_token, "token_type": "bearer"}
 
-@router.get("/me/info")
-def get_my_info(current_user: models.User = Depends(get_current_user)):
-    return {
-        "id": current_user.id,
-        "username": current_user.username,
-        "role": current_user.role
-    }
 
-    
-# Get All
+# ============== User Management ==============
+@router.get("/me/", response_model=schemas.User)
+def get_me(current_user: models.User = Depends(get_current_user_from_token)):
+    return current_user
+
+
 @router.get("/user/", response_model=list[schemas.User])
-def get_users(db: Session = Depends(get_db)):
+def get_all_users(db: Session = Depends(get_db), current_user: models.User = Depends(admin_required)):
+    """Nur Admins dürfen alle Benutzer sehen."""
     return crud.get_users(db)
 
-# Get ById
-@router.get("/user/{user_id}", response_model=list[schemas.User])
-def get_user_by_id(user_id: int, db: Session = Depends(get_db)):
-    return crud.get_user(db, user_id)
+
+@router.get("/user/{user_id}", response_model=schemas.User)
+def get_user_by_id(user_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user_from_token)):
+    user = crud.get_user(db, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Benutzer nicht gefunden")
+    return user
+
+
+@router.put("/user/{user_id}", response_model=schemas.User)
+def update_user_route(
+    user_id: int,
+    updated_data: schemas.UserUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user_from_token)
+):
+    return crud.update_user(db, user_id, updated_data, current_user)
+
+
+# ============== Admin Only ==============
+@router.put("/user/{user_id}/{action}", response_model=schemas.User)
+def toggle_user_activation(
+    user_id: int,
+    action: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(admin_required)
+):
+    if action not in ["activate", "deactivate"]:
+        raise HTTPException(status_code=400, detail="Ungültige Aktion")
+
+    updated_data = schemas.UserUpdate(is_active=(action == "activate"))
+    return crud.update_user(db, user_id, updated_data, current_user)
+
+
+@router.delete("/user/{user_id}")
+def delete_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(admin_required)
+):
+    return crud.delete_user(db, user_id, current_user)

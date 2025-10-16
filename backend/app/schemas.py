@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 
 # ============== VOKABELN ==============
 class VocabItemBase(BaseModel):
@@ -40,6 +40,11 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
 
+class UserUpdate(BaseModel):
+    username: Optional[str] = None
+    role: Optional[str] = None
+    is_active: Optional[bool] = None
+    
 class User(UserBase):
     id: int
     lists: List[VocabList] = []
