@@ -1,0 +1,201 @@
+from sqlalchemy.orm import Session
+from app import models, schemas, auth
+from fastapi import HTTPException, status
+from app.auth import hash_password
+
+# ============== USER ==============
+def create_user(db: Session, user: schemas.UserCreate):
+    hashed_pw = hash_password(user.password)
+
+    new_user = models.User(
+        username=user.username.strip(),
+        password=hashed_pw,
+        role="User",
+        is_active=True
+    )
+
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return new_user
+
+
+def get_users(db: Session):
+    return db.query(models.User).all()
+
+
+def get_user(db: Session, user_id: int):
+    return db.query(models.User).filter(models.User.id == user_id).first()
+
+
+def get_user_by_username(db: Session, username: str):
+    return db.query(models.User).filter(models.User.username == username).first()
+
+
+def update_user(db: Session, user_id: int, updated_data: schemas.UserUpdate, current_user: models.User):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Zieluser nicht gefunden")
+
+    if current_user.role != "Admin" and current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="Kein Zugriff!")
+
+    if updated_data.username and updated_data.username.strip():
+        user.username = updated_data.username.strip()
+
+    if updated_data.role and updated_data.role.strip():
+        if current_user.role != "Admin":
+            raise HTTPException(status_code=403, detail="Nur Admins dürfen Rollen ändern")
+        user.role = updated_data.role.strip()
+
+    if updated_data.is_active is not None:
+        if current_user.role != "Admin":
+            raise HTTPException(status_code=403, detail="Nur Admins dürfen Benutzer deaktivieren")
+        user.is_active = updated_data.is_active
+
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def deactivate_user(db: Session, user_id: int, current_user: models.User):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Benutzer nicht gefunden")
+
+    if current_user.role != "Admin":
+        raise HTTPException(status_code=403, detail="Nur Admins dürfen Benutzer deaktivieren")
+
+    if not user.is_active:
+        raise HTTPException(status_code=400, detail="Benutzer ist bereits deaktiviert")
+
+    user.is_active = False
+    db.commit()
+    db.refresh(user)
+    return {"message": f"Benutzer '{user.username}' wurde deaktiviert."}
+
+
+def delete_user(db: Session, user_id: int, current_user: models.User):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Benutzer nicht gefunden")
+
+    if current_user.role != "Admin":
+        raise HTTPException(status_code=403, detail="Nur Admins dürfen Benutzer löschen")
+
+    if current_user.id == user.id:
+        raise HTTPException(status_code=400, detail="Admins können sich nicht selbst löschen")
+
+    db.delete(user)
+    db.commit()
+    return {"message": f"Benutzer '{user.username}' wurde gelöscht."}
+
+# ============== VOKABELLISTEN ==============
+def create_vocab_list(db: Session, vocablist_data: schemas.VocabListCreate, user_id: int):
+    """
+    Erstellt eine neue Vokabellist für einen User.
+    """
+    new_vocab_list = models.VocabList(name=vocablist_data.name, user_id=user_id)
+    db.add(new_vocab_list)
+    db.commit()
+    db.refresh(new_vocab_list)
+    return new_vocab_list
+
+def get_vocab_list_by_user(db: Session, user_id: int):
+    """
+    Gibt alle Vokabellisten eines bestimmten Users aus.
+    """
+    return db.query(models.VocabList).filter(models.VocabList.user_id == user_id).all()
+
+def get_vocab_list(db: Session, vocablist_id: int):
+    """
+    Gibt Vokabellist einer bestimmten ID aus.
+    """
+    return db.query(models.VocabList).filter(models.VocabList.id == vocablist_id).first()
+
+
+def get_vocab_list_entries(db: Session, list_ids: list[int]):
+    from sqlalchemy.orm import joinedload
+    return db.query(models.VocabEntry).options(joinedload(models.VocabEntry.translations)).filter(models.VocabEntry.vocab_list_id.in_(list_ids)).all()
+
+# ============== VOKABELN (ENTRIES) ==============
+def create_vocab_entry(db: Session, data: schemas.VocabEntryCreate):
+    """
+    Erstellt einen Vokabeleintrag mit optionalen Übersetzungen.
+    """
+    entry = models.VocabEntry(
+        term=data.term,
+        source_language=data.source_language or "de",
+        vocab_list_id=data.vocab_list_id,
+    )
+    
+    db.add(entry)
+    db.flush()  # Flush to get the entry ID
+    
+    if data.translations:
+        for t in data.translations:
+            translation = models.VocabTranslation(text=t.text, language=t.language, entry_id=entry.id)
+            db.add(translation)
+
+    db.commit()
+    db.refresh(entry)
+    return entry
+
+
+def get_vocab_entry(db: Session, entry_id: int):
+    from sqlalchemy.orm import joinedload
+    return db.query(models.VocabEntry).options(joinedload(models.VocabEntry.translations)).filter(models.VocabEntry.id == entry_id).first()
+
+
+def update_vocab_entry(db: Session, entry_id: int, updated: schemas.VocabEntryUpdate):
+    entry = get_vocab_entry(db, entry_id)
+    if not entry:
+        return None
+    if updated.term is not None and updated.term.strip():
+        entry.term = updated.term.strip()
+    if updated.source_language is not None and updated.source_language.strip():
+        entry.source_language = updated.source_language.strip()
+    db.commit()
+    db.refresh(entry)
+    return entry
+
+
+def delete_vocab_entry(db: Session, entry_id: int):
+    entry = get_vocab_entry(db, entry_id)
+    if not entry:
+        return False
+    db.delete(entry)
+    db.commit()
+    return True
+
+
+# ============== TRANSLATIONS ==============
+def add_translation(db: Session, entry_id: int, t: schemas.VocabTranslationCreate):
+    entry = get_vocab_entry(db, entry_id)
+    if not entry:
+        return None
+    trans = models.VocabTranslation(text=t.text, language=t.language, entry=entry)
+    db.add(trans)
+    db.commit()
+    db.refresh(trans)
+    return trans
+
+
+def update_translation(db: Session, translation_id: int, t: schemas.VocabTranslationCreate):
+    trans = db.query(models.VocabTranslation).filter(models.VocabTranslation.id == translation_id).first()
+    if not trans:
+        return None
+    trans.text = t.text
+    trans.language = t.language
+    db.commit()
+    db.refresh(trans)
+    return trans
+
+
+def delete_translation(db: Session, translation_id: int):
+    trans = db.query(models.VocabTranslation).filter(models.VocabTranslation.id == translation_id).first()
+    if not trans:
+        return False
+    db.delete(trans)
+    db.commit()
+    return True
