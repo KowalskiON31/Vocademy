@@ -22,7 +22,9 @@ venv/
 env/
 */venv/
 */env/
-
+# Ignore environment files
+backend/.env
+*.env
 # Local environment / secrets
 .env
 .env.*
