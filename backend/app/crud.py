@@ -15,6 +15,7 @@ def create_user(db: Session, user: schemas.UserCreate):
     new_user = models.User(
         username=user.username.strip(),
         email=user.email.strip(),
+        firstname=(user.firstname.strip() if getattr(user, 'firstname', None) else None),
         password=hashed_pw,
         role="User",
         is_active=True
@@ -58,6 +59,14 @@ def update_user(db: Session, user_id: int, updated_data: schemas.UserUpdate, cur
         if existing:
             raise HTTPException(status_code=400, detail="Email bereits vergeben")
         user.email = updated_data.email.strip()
+
+    if getattr(updated_data, 'firstname', None) is not None:
+        # Allow clearing to empty -> store None
+        fn = updated_data.firstname.strip() if updated_data.firstname else None
+        user.firstname = fn
+
+    if getattr(updated_data, 'avatar', None) is not None:
+        user.avatar = updated_data.avatar
 
     if updated_data.role and updated_data.role.strip():
         if current_user.role != "Admin":

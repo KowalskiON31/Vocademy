@@ -83,6 +83,8 @@ class VocabList(VocabListBase):
 class UserBase(BaseModel):
     username: str
     email: EmailStr
+    firstname: Optional[str] = None
+    avatar: Optional[str] = None
 
 class UserCreate(UserBase):
     password: str
@@ -90,8 +92,10 @@ class UserCreate(UserBase):
 class UserUpdate(BaseModel):
     username: Optional[str] = None
     email: Optional[EmailStr] = None
+    firstname: Optional[str] = None
     role: Optional[str] = None
     is_active: Optional[bool] = None
+    avatar: Optional[str] = None
 
 class User(UserBase):
     id: int

@@ -33,7 +33,7 @@ export default function VocabTest() {
   useEffect(() => {
     getVocabLists()
       .then((res) => setLists(res.data))
-      .catch(() => alert("Fehler beim Laden der Listen!"));
+      .catch(() => {});
   }, []);
 
   const toggleList = (id: number) => {
@@ -43,7 +43,7 @@ export default function VocabTest() {
   };
 
   const startTest = async () => {
-    if (selectedLists.length === 0) return alert("Bitte mindestens eine Liste wählen!");
+    if (selectedLists.length === 0) return;
     setLoading(true);
     try {
       let allEntries: Entry[] = [];
@@ -71,7 +71,6 @@ export default function VocabTest() {
       setScore(0);
       setCurrent(0);
     } catch {
-      alert("Fehler beim Laden der Vokabeln!");
     } finally {
       setLoading(false);
     }
@@ -94,11 +93,8 @@ export default function VocabTest() {
       direction === "1" ? q.trans.toLowerCase() : q.term.toLowerCase();
     if (answer.trim().toLowerCase() === correct) {
       setScore((s) => s + 1);
-      alert("✅ Richtig!");
     } else {
-      alert(
-        `❌ Falsch. Richtig wäre: ${correct}`
-      );
+      // keep silent in legacy page
     }
     setAnswer("");
     if (current + 1 >= questions.length) {

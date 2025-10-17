@@ -6,6 +6,7 @@ from app.auth import (
     verify_password, create_access_token,
     get_current_user_from_token, admin_required
 )
+from pydantic import BaseModel
 
 router = APIRouter()
 
@@ -88,3 +89,30 @@ def delete_user(
     current_user: models.User = Depends(admin_required)
 ):
     return crud.delete_user(db, user_id, current_user)
+
+
+# ============== Password Change (self only) ==============
+class PasswordChangeRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
+
+
+@router.put("/user/me/password/")
+def change_password_me(
+    body: PasswordChangeRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user_from_token)
+):
+    user = crud.get_user(db, current_user.id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if not verify_password(body.current_password, user.password):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    from app.auth import hash_password
+    user.password = hash_password(body.new_password)
+    db.commit()
+    return {"message": "Password changed"}
