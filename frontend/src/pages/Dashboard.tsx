@@ -236,6 +236,12 @@ export default function Dashboard() {
                 Admin
               </a>
             )}
+            <a
+              href="/test"
+              className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition"
+            >
+              Vokabeltest
+            </a>
             <button
               onClick={logout}
               className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors duration-200 font-medium"

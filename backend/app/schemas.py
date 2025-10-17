@@ -1,76 +1,113 @@
-from pydantic import BaseModel
-from typing import List, Optional
+from pydantic import BaseModel, EmailStr
+from typing import List, Optional, Dict
 
-# ============== VOKABELN ==============
-class VocabTranslationBase(BaseModel):
-    text: str
-    language: str
+# ============== LIST COLUMNS ==============
+class ListColumnBase(BaseModel):
+    name: str
+    column_type: Optional[str] = "custom"
+    language_code: Optional[str] = None
+    is_primary: Optional[bool] = False
 
-class VocabTranslationCreate(VocabTranslationBase):
+class ListColumnCreate(ListColumnBase):
+    position: Optional[int] = 0
+
+class ListColumn(ListColumnBase):
+    id: int
+    vocab_list_id: int
+    position: int
+
+    model_config = {"from_attributes": True}
+
+
+
+# ============== ENTRY FIELD VALUES ==============
+class EntryFieldValueBase(BaseModel):
+    column_id: int
+    value: str
+
+class EntryFieldValueCreate(EntryFieldValueBase):
     pass
 
-class VocabTranslation(VocabTranslationBase):
+class EntryFieldValue(EntryFieldValueBase):
     id: int
     entry_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
+
+# ============== VOCAB ENTRIES ==============
 class VocabEntryBase(BaseModel):
-    term: str
-    source_language: Optional[str] = "de"
+    pass
 
 class VocabEntryCreate(VocabEntryBase):
     vocab_list_id: int
-    translations: Optional[List[VocabTranslationCreate]] = None
+    field_values: List[EntryFieldValueCreate]
 
 class VocabEntryUpdate(BaseModel):
-    term: Optional[str] = None
-    source_language: Optional[str] = None
+    field_values: Optional[List[EntryFieldValueCreate]] = None
 
 class VocabEntry(VocabEntryBase):
     id: int
     vocab_list_id: int
-    translations: List[VocabTranslation] = []
+    position: int
+    field_values: List[EntryFieldValue] = []
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
-# ============== VOKABELLISTEN ==============
+
+# ============== VOCAB LISTS ==============
 class VocabListBase(BaseModel):
-    name:str
+    name: str
+    description: Optional[str] = None
 
 class VocabListCreate(VocabListBase):
-    pass
-    
+    columns: List[ListColumnCreate]
+
+class VocabListUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+
 class VocabList(VocabListBase):
     id: int
     user_id: int
+    columns: List[ListColumn] = []
     entries: List[VocabEntry] = []
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
+
 
 
 # ============== USER ==============
 class UserBase(BaseModel):
     username: str
+    email: EmailStr
 
 class UserCreate(UserBase):
     password: str
 
 class UserUpdate(BaseModel):
     username: Optional[str] = None
+    email: Optional[EmailStr] = None
     role: Optional[str] = None
     is_active: Optional[bool] = None
-    
+
 class User(UserBase):
     id: int
     role: str
     is_active: bool
     lists: List[VocabList] = []
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
+
+
+
+# ============== TABLE VIEW (Helper Schema) ==============
+class VocabEntryTableRow(BaseModel):
+    """Für tabellarische Darstellung der Einträge"""
+    entry_id: int
+    position: int
+    values: Dict[str, str]  # column_name -> value
+    
+    model_config = {"from_attributes": True}
