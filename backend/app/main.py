@@ -1,4 +1,4 @@
-﻿from fastapi import FastAPI
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -8,7 +8,7 @@ from app.routes import vocab, vocablist, user
 
 app = FastAPI()
 
-# CORS für Dev und produktive Domain zulassen
+# CORS for dev and production domain
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -23,25 +23,44 @@ app.add_middleware(
 
 Base.metadata.create_all(bind=engine)
 
-# API-Routen unter /api
+# API routes under /api
 app.include_router(vocab.router, prefix="/api")
 app.include_router(vocablist.router, prefix="/api")
 app.include_router(user.router, prefix="/api")
 
-# Frontend-Build (Vite) ausliefern, falls vorhanden
+# Frontend build paths
 frontend_dist = (Path(__file__).resolve().parents[2] / "frontend" / "dist").resolve()
-if frontend_dist.exists():
-    app.mount("/", StaticFiles(directory=str(frontend_dist), html=True), name="static")
+index_file = frontend_dist / "index.html"
+assets_dir = frontend_dist / "assets"
 
-    # SPA-Fallback: Unbekannte Pfade an index.html zurückgeben
-    index_file = frontend_dist / "index.html"
+# Serve Vite assets under /assets if they exist
+if assets_dir.exists():
+    app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="assets")
 
-    @app.get("/{full_path:path}")
-    def spa_fallback(full_path: str):
-        if index_file.exists():
-            return FileResponse(str(index_file))
-        return {"msg": "Frontend build not found"}
-else:
-    @app.get("/")
-    def read_root():
-        return {"msg": "Backend l��uft mit Datenbank!"}
+# Root serves index.html if present (SPA), else backend info
+@app.get("/", include_in_schema=False)
+def root_html():
+    if index_file.exists():
+        return FileResponse(str(index_file))
+    return {"msg": "Backend läuft mit Datenbank!"}
+
+# SPA fallback for client-side routes (non-API)
+@app.get("/{full_path:path}", include_in_schema=False)
+def spa_fallback(full_path: str, request: Request):
+    # Do not intercept API routes
+    if full_path.startswith("api"):
+        raise HTTPException(status_code=404, detail="Not Found")
+    # Serve index.html for any other path if build exists
+    if index_file.exists():
+        return FileResponse(str(index_file))
+    raise HTTPException(status_code=404, detail="Not Found")
+
+# Simple health/info endpoints under /api
+@app.get("/api/health")
+def health():
+    return {"status": "ok"}
+
+@app.get("/api")
+def api_root():
+    return {"status": "ok", "routes": ["/api/login/", "/api/register/", "/api/vocablist/", "/api/health"]}
+
