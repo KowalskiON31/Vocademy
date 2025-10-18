@@ -63,7 +63,6 @@ yarn.lock
 pnpm-lock.yaml
 
 # Frontend build outputs
-frontend/dist/
 frontend/build/
 frontend/.vite/
 frontend/.next/
@@ -104,7 +103,6 @@ test_vokabeln.db
 # 🔹 Distribution / Build
 # =========================
 build/
-dist/
 site/
 docs/_build/
 *.manifest

@@ -2,6 +2,6 @@
 credentials-file: /home/pi/.cloudflared/TUNNEL-ID.json
 
 ingress:
-  - hostname: vocademy.onicssolutions.cc
-    service: http://localhost:8000
+  - hostname: name.url.com
+    service: http://localhost:port
   - service: http_status:404

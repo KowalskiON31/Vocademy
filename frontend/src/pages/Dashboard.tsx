@@ -75,13 +75,13 @@ export default function Dashboard() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Liste wirklich lÃ¶schen? Alle EintrÃ¤ge gehen verloren.")) return;
+    if (!confirm("Liste wirklich löschen? Alle Einträge gehen verloren.")) return;
     try {
       const { deleteVocabList } = await import("../services/vocab");
       await deleteVocabList(id);
       setLists((prev) => prev.filter((l) => l.id !== id));
     } catch {
-      setError("LÃ¶schen fehlgeschlagen");
+      setError("Löschen fehlgeschlagen");
     }
   };
 
@@ -119,7 +119,7 @@ export default function Dashboard() {
                 </div>
                 <div className="flex items-center gap-2">
                   <button onClick={() => openEdit(l)} className="text-sm px-2 py-1 rounded hover:bg-gray-100">Bearbeiten</button>
-                  <button onClick={() => handleDelete(l.id)} className="text-sm text-red-600 px-2 py-1 rounded hover:bg-red-50">LÃ¶schen</button>
+                  <button onClick={() => handleDelete(l.id)} className="text-sm text-red-600 px-2 py-1 rounded hover:bg-red-50">Löschen</button>
                 </div>
               </div>
             </div>
@@ -144,7 +144,7 @@ export default function Dashboard() {
               onChange={(e) => setDescription(e.target.value)}
             />
             <div>
-              <label className="block text-sm text-gray-600 mb-1">Anzahl Ãœbersetzungen</label>
+              <label className="block text-sm text-gray-600 mb-1">Anzahl Übersetzungen</label>
               <input
                 type="number"
                 min={1}
@@ -164,12 +164,12 @@ export default function Dashboard() {
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-sm text-gray-600">Namen der Ãœbersetzungs-Spalten</label>
+              <label className="block text-sm text-gray-600">Namen der Übersetzungs-Spalten</label>
               {Array.from({ length: translationsCount }).map((_, i) => (
                 <input
                   key={i}
                   className="w-full border rounded px-3 py-2"
-                  placeholder={`Ãœbersetzung ${i + 1} (z.B. Englisch)`}
+                  placeholder={`Übersetzung ${i + 1} (z.B. Englisch)`}
                   value={translationNames[i] ?? ""}
                   onChange={(e) =>
                     setTranslationNames((prev) => {
@@ -217,4 +217,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
