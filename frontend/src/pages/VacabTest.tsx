@@ -1,9 +1,9 @@
-// src/pages/VocabTest.tsx
+﻿// src/pages/VocabTest.tsx
 import { useEffect, useState } from "react";
 import {
   getVocabLists,
   getEntriesByList,
-} from "../services/api";
+} from "../services/vocab";
 
 interface VocabList {
   id: number;
@@ -20,7 +20,7 @@ interface Entry {
 export default function VocabTest() {
   const [lists, setLists] = useState<VocabList[]>([]);
   const [selectedLists, setSelectedLists] = useState<number[]>([]);
-  const [entries, setEntries] = useState<Entry[]>([]);
+  const [, setEntries] = useState<Entry[]>([]);
   const [mode, setMode] = useState<"1" | "2" | "3">("3");
   const [questions, setQuestions] = useState<any[]>([]);
   const [current, setCurrent] = useState(0);
@@ -32,7 +32,7 @@ export default function VocabTest() {
   // Listen laden
   useEffect(() => {
     getVocabLists()
-      .then((res) => setLists(res.data))
+      .then((res: any) => setLists(res.data))
       .catch(() => {});
   }, []);
 
@@ -104,13 +104,13 @@ export default function VocabTest() {
     }
   };
 
-  if (loading) return <div className="p-8">Laden…</div>;
+  if (loading) return <div className="p-8">Ladenâ€¦</div>;
 
   if (finished)
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
         <div className="bg-white p-8 rounded-lg shadow-lg text-center">
-          <h2 className="text-2xl font-bold mb-4">🎯 Test beendet!</h2>
+          <h2 className="text-2xl font-bold mb-4">ðŸŽ¯ Test beendet!</h2>
           <p className="text-lg mb-2">
             {score} von {questions.length} richtig
           </p>
@@ -131,9 +131,9 @@ export default function VocabTest() {
     return (
       <div className="min-h-screen bg-gray-50 p-8">
         <div className="max-w-3xl mx-auto bg-white rounded-lg shadow p-6">
-          <h1 className="text-2xl font-bold mb-4">🧠 Vokabeltest</h1>
+          <h1 className="text-2xl font-bold mb-4">ðŸ§  Vokabeltest</h1>
 
-          <h2 className="font-semibold mb-2">Wähle deine Listen:</h2>
+          <h2 className="font-semibold mb-2">WÃ¤hle deine Listen:</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-4">
             {lists.map((l) => (
               <button
@@ -156,9 +156,9 @@ export default function VocabTest() {
             onChange={(e) => setMode(e.target.value as "1" | "2" | "3")}
             className="border rounded px-3 py-2 mb-4"
           >
-            <option value="1">Quelle → Ziel</option>
-            <option value="2">Ziel → Quelle</option>
-            <option value="3">Zufällig</option>
+            <option value="1">Quelle â†’ Ziel</option>
+            <option value="2">Ziel â†’ Quelle</option>
+            <option value="3">ZufÃ¤llig</option>
           </select>
 
           <button
@@ -176,8 +176,8 @@ export default function VocabTest() {
   const direction = mode === "3" ? (Math.random() < 0.5 ? "1" : "2") : mode;
   const questionText =
     direction === "1"
-      ? `${q.term} (${q.source} → ${q.target})`
-      : `${q.trans} (${q.target} → ${q.source})`;
+      ? `${q.term} (${q.source} â†’ ${q.target})`
+      : `${q.trans} (${q.target} â†’ ${q.source})`;
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
@@ -198,9 +198,10 @@ export default function VocabTest() {
           onClick={handleSubmit}
           className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 w-full"
         >
-          Bestätigen
+          BestÃ¤tigen
         </button>
       </div>
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import { getVocabLists, getVocabList, getEntriesByList } from "../services/vocab";
 
@@ -74,7 +74,7 @@ export default function VocabTest() {
   };
 
   const start = async () => {
-    if (!selected.length) { setError("Bitte mindestens eine Liste wählen!"); return; }
+    if (!selected.length) { setError("Bitte mindestens eine Liste wÃ¤hlen!"); return; }
     setLoading(true);
     try {
       const all: {
@@ -85,7 +85,7 @@ export default function VocabTest() {
         targetName: string;
       }[] = [];
 
-      // Liste für Liste abfragen (keine globale Durchmischung der Listen)
+      // Liste fÃ¼r Liste abfragen (keine globale Durchmischung der Listen)
       for (const listId of selected) {
         const [listRes, entriesRes] = await Promise.all([
           getVocabList(listId),
@@ -95,7 +95,7 @@ export default function VocabTest() {
         const columns = listRes.data.columns as Column[];
         const nameToId = new Map(columns.map((c) => [c.name, c.id] as const));
 
-        // Quelle je Liste: gewählte Spalte für diese Liste, sonst Primärspalte
+        // Quelle je Liste: gewÃ¤hlte Spalte fÃ¼r diese Liste, sonst PrimÃ¤rspalte
         let srcColName = sourceByList[listId];
         let srcId = nameToId.get(srcColName);
         if (!srcId) {
@@ -105,10 +105,10 @@ export default function VocabTest() {
           srcColName = primary.name;
         }
 
-        // Zielkandidaten: alle anderen Spalten in dieser Liste (außer Quelle)
+        // Zielkandidaten: alle anderen Spalten in dieser Liste (auÃŸer Quelle)
         const targets = columns.filter((c) => c.id !== srcId);
 
-        // Reihenfolge innerhalb der Liste: wir können Einträge mischen,
+        // Reihenfolge innerhalb der Liste: wir kÃ¶nnen EintrÃ¤ge mischen,
         // aber bleiben innerhalb der Liste
         const entries = (entriesRes.data as Entry[]).slice();
         for (let i = entries.length - 1; i > 0; i--) {
@@ -121,7 +121,7 @@ export default function VocabTest() {
           const src = (map.get(srcId) || "").trim();
           if (!src) continue;
 
-          // Ziele pro Eintrag in zufälliger Reihenfolge
+          // Ziele pro Eintrag in zufÃ¤lliger Reihenfolge
           const shuffledTargets = targets.slice();
           for (let i = shuffledTargets.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -194,7 +194,7 @@ export default function VocabTest() {
                     <span>#{i + 1}</span>
                     <span>{qq.listName}</span>
                   </div>
-                  <div className="mt-1 text-sm text-gray-700">{qq.sourceName} → {qq.targetName}</div>
+                  <div className="mt-1 text-sm text-gray-700">{qq.sourceName} â†’ {qq.targetName}</div>
                   <div className="mt-2 text-lg font-semibold">{qq.q}</div>
                   <div className="mt-2 text-sm">
                     <div className="text-gray-500">Deine Antwort</div>
@@ -205,7 +205,7 @@ export default function VocabTest() {
                     {ok ? (
                       <div className="text-green-700">Richtig</div>
                     ) : (
-                      <div className="text-red-700">Falsch — richtig: {qq.a}</div>
+                      <div className="text-red-700">Falsch â€” richtig: {qq.a}</div>
                     )}
                   </div>
                 </div>
@@ -220,7 +220,7 @@ export default function VocabTest() {
                 <tr>
                   <th className="px-3 py-2 text-left">#</th>
                   <th className="px-3 py-2 text-left">Liste</th>
-                  <th className="px-3 py-2 text-left">Quelle → Ziel</th>
+                  <th className="px-3 py-2 text-left">Quelle â†’ Ziel</th>
                   <th className="px-3 py-2 text-left">Frage</th>
                   <th className="px-3 py-2 text-left">Deine Antwort</th>
                   <th className="px-3 py-2 text-left">Richtig</th>
@@ -234,14 +234,14 @@ export default function VocabTest() {
                     <tr key={i} className="border-t">
                       <td className="px-3 py-2">{i + 1}</td>
                       <td className="px-3 py-2">{qq.listName}</td>
-                      <td className="px-3 py-2">{qq.sourceName} → {qq.targetName}</td>
+                      <td className="px-3 py-2">{qq.sourceName} â†’ {qq.targetName}</td>
                       <td className="px-3 py-2">{qq.q}</td>
                       <td className="px-3 py-2">{ua || <span className="text-gray-400">(leer)</span>}</td>
                       <td className="px-3 py-2">
                         {ok ? (
-                          <span className="text-green-700">✓</span>
+                          <span className="text-green-700">âœ“</span>
                         ) : (
-                          <span className="text-red-700">✗ ({qq.a})</span>
+                          <span className="text-red-700">âœ— ({qq.a})</span>
                         )}
                       </td>
                     </tr>
@@ -263,9 +263,9 @@ export default function VocabTest() {
           {error && (
             <div className="bg-red-100 text-red-700 border border-red-400 p-2 rounded text-sm">{error}</div>
           )}
-          <p className="text-gray-600">Es wird Liste für Liste abgefragt. Quelle ist deine Auswahl; fehlt sie in einer Liste, wird deren Primärspalte verwendet.</p>
+          <p className="text-gray-600">Es wird Liste fÃ¼r Liste abgefragt. Quelle ist deine Auswahl; fehlt sie in einer Liste, wird deren PrimÃ¤rspalte verwendet.</p>
           <div>
-            <h2 className="font-semibold mb-2">Listen auswählen</h2>
+            <h2 className="font-semibold mb-2">Listen auswÃ¤hlen</h2>
             <div className="flex flex-wrap gap-2">
               {lists.map((l) => (
                 <button
@@ -280,7 +280,7 @@ export default function VocabTest() {
           </div>
 
           <div className="space-y-4">
-            <h2 className="font-semibold">Quelle pro Liste wählen</h2>
+            <h2 className="font-semibold">Quelle pro Liste wÃ¤hlen</h2>
             {selected.map((id) => {
               const cols = columnsByList[id] || [];
               const listName = (lists.find((l) => l.id === id)?.name) || `Liste ${id}`;
@@ -293,7 +293,7 @@ export default function VocabTest() {
                       onChange={(e) => setSourceByList((prev) => ({ ...prev, [id]: e.target.value }))}
                       className="border rounded px-3 py-2 w-full"
                     >
-                      <option value="" disabled>Quelle wählen</option>
+                      <option value="" disabled>Quelle wÃ¤hlen</option>
                       {cols.map((c) => (
                         <option key={c.id} value={c.name}>{c.name}</option>
                       ))}
@@ -302,7 +302,7 @@ export default function VocabTest() {
                 </div>
               );
             })}
-            <p className="text-xs text-gray-500">Ziel ist automatisch „alle anderen Sprachen“ der jeweils ausgewählten Liste.</p>
+            <p className="text-xs text-gray-500">Ziel ist automatisch â€žalle anderen Sprachenâ€œ der jeweils ausgewÃ¤hlten Liste.</p>
           </div>
 
           <div>
@@ -322,7 +322,7 @@ export default function VocabTest() {
             <span>Frage {current + 1}/{questions.length}</span>
             <span>Liste: {q.listName}</span>
           </div>
-          <div className="text-sm text-gray-700">Quelle: <span className="font-medium">{q.sourceName}</span> → Ziel: <span className="font-medium">{q.targetName}</span></div>
+          <div className="text-sm text-gray-700">Quelle: <span className="font-medium">{q.sourceName}</span> â†’ Ziel: <span className="font-medium">{q.targetName}</span></div>
           <div className="text-2xl font-semibold text-center">{q.q}</div>
           <input
             type="text"
@@ -330,11 +330,12 @@ export default function VocabTest() {
             onChange={(e) => setAnswer(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && submit()}
             className="border rounded w-full px-3 py-2"
-            placeholder="Antwort eingeben…"
+            placeholder="Antwort eingebenâ€¦"
           />
-          <button onClick={submit} className="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700 w-full">Bestätigen</button>
+          <button onClick={submit} className="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700 w-full">BestÃ¤tigen</button>
         </div>
       </div>
     </div>
   );
 }
+
