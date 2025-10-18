@@ -1,0 +1,7 @@
+﻿tunnel: vocademy
+credentials-file: /home/pi/.cloudflared/TUNNEL-ID.json
+
+ingress:
+  - hostname: vocademy.onicssolutions.cc
+    service: http://localhost:8000
+  - service: http_status:404

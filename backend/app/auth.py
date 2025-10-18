@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+﻿from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
@@ -19,7 +19,7 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login/")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login/")
 
 def get_db():
     db = database.SessionLocal()
@@ -61,7 +61,7 @@ def get_current_user_from_token(
 ):
     username = verify_access_token(token)
     if not username:
-        raise HTTPException(status_code=401, detail="Ungültiger oder abgelaufener Token")
+        raise HTTPException(status_code=401, detail="UngÃ¼ltiger oder abgelaufener Token")
 
     user = db.query(models.User).filter(models.User.username == username).first()
     if not user:
@@ -76,14 +76,14 @@ def admin_required(token: str = Depends(oauth2_scheme)):
     try:
         username = verify_access_token(token)
         if not username:
-            raise HTTPException(status_code=401, detail="Ungültiger oder abgelaufener Token")
+            raise HTTPException(status_code=401, detail="UngÃ¼ltiger oder abgelaufener Token")
 
         user = db.query(models.User).filter(models.User.username == username).first()
         if not user:
             raise HTTPException(status_code=404, detail="Benutzer nicht gefunden")
 
         if user.role != "Admin":
-            raise HTTPException(status_code=403, detail="Nur Admins dürfen diese Aktion durchführen")
+            raise HTTPException(status_code=403, detail="Nur Admins dÃ¼rfen diese Aktion durchfÃ¼hren")
 
         return user
     finally:

@@ -1,0 +1,13 @@
+﻿[Unit]
+Description=Vocademy Backend (FastAPI + Static)
+After=network.target
+
+[Service]
+WorkingDirectory=/home/pi/Vocademy/backend
+ExecStart=/home/pi/Vocademy/backend/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
+User=pi
+Restart=always
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

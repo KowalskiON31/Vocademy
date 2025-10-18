@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+﻿from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from app import schemas, crud, database, models
@@ -13,14 +13,14 @@ def get_db():
     finally:
         db.close()
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login/")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login/")
 
 
 def get_current_user(token: str, db: Session) -> models.User:
     """Helper function to get current user from token"""
     username = verify_access_token(token)
     if not username:
-        raise HTTPException(status_code=401, detail="Ungültiger Token")
+        raise HTTPException(status_code=401, detail="UngÃ¼ltiger Token")
     
     user = db.query(models.User).filter(models.User.username == username).first()
     if not user:
@@ -59,7 +59,7 @@ def create_entry(
         raise HTTPException(status_code=404, detail="Vokabelliste nicht gefunden")
     
     if vocab_list.user_id != user.id:
-        raise HTTPException(status_code=403, detail="Keine Berechtigung für diese Liste")
+        raise HTTPException(status_code=403, detail="Keine Berechtigung fÃ¼r diese Liste")
 
     return crud.create_vocab_entry(db, item)
 
@@ -70,7 +70,7 @@ def get_entries_by_list(
     db: Session = Depends(get_db),
     token: str = Depends(oauth2_scheme)
 ):
-    """Gibt alle Einträge einer Liste zurück"""
+    """Gibt alle EintrÃ¤ge einer Liste zurÃ¼ck"""
     user = get_current_user(token, db)
 
     vocab_list = db.query(models.VocabList).filter(models.VocabList.id == list_id).first()
@@ -78,7 +78,7 @@ def get_entries_by_list(
         raise HTTPException(status_code=404, detail="Vokabelliste nicht gefunden")
     
     if vocab_list.user_id != user.id:
-        raise HTTPException(status_code=403, detail="Keine Berechtigung für diese Liste")
+        raise HTTPException(status_code=403, detail="Keine Berechtigung fÃ¼r diese Liste")
 
     entries = crud.get_vocab_list_entries(db, list_id)
     return entries
@@ -90,7 +90,7 @@ def get_entry(
     db: Session = Depends(get_db),
     token: str = Depends(oauth2_scheme)
 ):
-    """Gibt einen spezifischen Eintrag zurück"""
+    """Gibt einen spezifischen Eintrag zurÃ¼ck"""
     user = get_current_user(token, db)
     
     entry = crud.get_vocab_entry(db, entry_id)
@@ -98,7 +98,7 @@ def get_entry(
         raise HTTPException(status_code=404, detail="Eintrag nicht gefunden")
     
     if entry.vocab_list.user_id != user.id:
-        raise HTTPException(status_code=403, detail="Keine Berechtigung für diesen Eintrag")
+        raise HTTPException(status_code=403, detail="Keine Berechtigung fÃ¼r diesen Eintrag")
     
     return entry
 
@@ -130,7 +130,7 @@ def update_entry(
         raise HTTPException(status_code=404, detail="Eintrag nicht gefunden")
     
     if entry.vocab_list.user_id != user.id:
-        raise HTTPException(status_code=403, detail="Keine Berechtigung für diesen Eintrag")
+        raise HTTPException(status_code=403, detail="Keine Berechtigung fÃ¼r diesen Eintrag")
     
     updated = crud.update_vocab_entry(db, entry_id, data)
     return updated
@@ -142,7 +142,7 @@ def delete_entry(
     db: Session = Depends(get_db),
     token: str = Depends(oauth2_scheme)
 ):
-    """Löscht einen Vokabeleintrag"""
+    """LÃ¶scht einen Vokabeleintrag"""
     user = get_current_user(token, db)
     
     entry = crud.get_vocab_entry(db, entry_id)
@@ -150,7 +150,7 @@ def delete_entry(
         raise HTTPException(status_code=404, detail="Eintrag nicht gefunden")
     
     if entry.vocab_list.user_id != user.id:
-        raise HTTPException(status_code=403, detail="Keine Berechtigung für diesen Eintrag")
+        raise HTTPException(status_code=403, detail="Keine Berechtigung fÃ¼r diesen Eintrag")
     
     crud.delete_vocab_entry(db, entry_id)
-    return {"message": "Eintrag gelöscht"}
+    return {"message": "Eintrag gelÃ¶scht"}

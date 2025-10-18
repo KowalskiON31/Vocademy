@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+﻿from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordBearer
 from app import schemas, crud, database, models
@@ -13,14 +13,14 @@ def get_db():
     finally:
         db.close()
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login/")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login/")
 
 
 def get_current_user(token: str, db: Session) -> models.User:
     """Helper function to get current user from token"""
     username = verify_access_token(token)
     if not username:
-        raise HTTPException(status_code=401, detail="Ungültiger Token")
+        raise HTTPException(status_code=401, detail="UngÃ¼ltiger Token")
     
     user = db.query(models.User).filter(models.User.username == username).first()
     if not user:
@@ -60,7 +60,7 @@ def get_all_vocablists(
     db: Session = Depends(get_db),
     token: str = Depends(oauth2_scheme)
 ):
-    """Gibt alle Vokabellisten des aktuellen Users zurück"""
+    """Gibt alle Vokabellisten des aktuellen Users zurÃ¼ck"""
     user = get_current_user(token, db)
     return crud.get_vocab_list_by_user(db, user.id)
 
@@ -71,7 +71,7 @@ def get_vocablist(
     db: Session = Depends(get_db),
     token: str = Depends(oauth2_scheme)
 ):
-    """Gibt eine spezifische Vokabelliste zurück"""
+    """Gibt eine spezifische Vokabelliste zurÃ¼ck"""
     user = get_current_user(token, db)
     
     vocab_list = crud.get_vocab_list(db, vocab_id)
@@ -79,7 +79,7 @@ def get_vocablist(
         raise HTTPException(status_code=404, detail="Vokabelliste nicht gefunden")
     
     if vocab_list.user_id != user.id:
-        raise HTTPException(status_code=403, detail="Keine Berechtigung für diese Liste")
+        raise HTTPException(status_code=403, detail="Keine Berechtigung fÃ¼r diese Liste")
     
     return vocab_list
 
@@ -99,7 +99,7 @@ def update_vocablist(
         raise HTTPException(status_code=404, detail="Vokabelliste nicht gefunden")
     
     if vocab_list.user_id != user.id:
-        raise HTTPException(status_code=403, detail="Keine Berechtigung für diese Liste")
+        raise HTTPException(status_code=403, detail="Keine Berechtigung fÃ¼r diese Liste")
     
     updated = crud.update_vocab_list(db, vocab_id, item)
     return updated
@@ -111,7 +111,7 @@ def delete_vocablist(
     db: Session = Depends(get_db),
     token: str = Depends(oauth2_scheme)
 ):
-    """Löscht eine Vokabelliste"""
+    """LÃ¶scht eine Vokabelliste"""
     user = get_current_user(token, db)
     
     vocab_list = crud.get_vocab_list(db, vocab_id)
@@ -119,10 +119,10 @@ def delete_vocablist(
         raise HTTPException(status_code=404, detail="Vokabelliste nicht gefunden")
     
     if vocab_list.user_id != user.id:
-        raise HTTPException(status_code=403, detail="Keine Berechtigung für diese Liste")
+        raise HTTPException(status_code=403, detail="Keine Berechtigung fÃ¼r diese Liste")
     
     crud.delete_vocab_list(db, vocab_id)
-    return {"message": "Vokabelliste wurde gelöscht"}
+    return {"message": "Vokabelliste wurde gelÃ¶scht"}
 
 
 # ============== LIST COLUMNS ==============
@@ -134,7 +134,7 @@ def add_column_to_list(
     token: str = Depends(oauth2_scheme)
 ):
     """
-    Fügt eine neue Spalte zu einer existierenden Liste hinzu.
+    FÃ¼gt eine neue Spalte zu einer existierenden Liste hinzu.
     
     Beispiel: {"name": "Beispielsatz", "column_type": "example", "position": 4}
     """
@@ -145,7 +145,7 @@ def add_column_to_list(
         raise HTTPException(status_code=404, detail="Vokabelliste nicht gefunden")
     
     if vocab_list.user_id != user.id:
-        raise HTTPException(status_code=403, detail="Keine Berechtigung für diese Liste")
+        raise HTTPException(status_code=403, detail="Keine Berechtigung fÃ¼r diese Liste")
     
     new_column = crud.add_column_to_list(db, vocab_id, column)
     return new_column
@@ -157,7 +157,7 @@ def delete_column(
     db: Session = Depends(get_db),
     token: str = Depends(oauth2_scheme)
 ):
-    """Löscht eine Spalte (und alle zugehörigen Werte)"""
+    """LÃ¶scht eine Spalte (und alle zugehÃ¶rigen Werte)"""
     user = get_current_user(token, db)
     
     column = db.query(models.ListColumn).filter(models.ListColumn.id == column_id).first()
@@ -170,4 +170,4 @@ def delete_column(
         raise HTTPException(status_code=403, detail="Keine Berechtigung")
     
     crud.delete_column(db, column_id)
-    return {"message": "Spalte wurde gelöscht"}
+    return {"message": "Spalte wurde gelÃ¶scht"}
