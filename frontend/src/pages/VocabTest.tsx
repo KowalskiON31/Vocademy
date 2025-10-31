@@ -2,6 +2,60 @@
 import Navbar from "../components/Navbar";
 import { getVocabLists, getVocabList, getEntriesByList } from "../services/vocab";
 
+// Toleranter Antwortvergleich: normalisiert Zeichen, Leerzeichen, Interpunktion
+function normalizeAnswer(input: string): string {
+  if (!input) return "";
+  return input
+    .toLowerCase()
+    .normalize('NFKD')
+    // Diakritika entfernen (z. B. ä -> a)
+    .replace(/[\u0300-\u036f]/g, '')
+    // ß vereinheitlichen
+    .replace(/ß/g, 'ss')
+    // Verschiedene Anführungszeichen angleichen
+    .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035\u00B4]/g, "'")
+    .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')
+    // Interpunktion und Klammern durch Leerzeichen ersetzen (damit Wörter nicht zusammenkleben)
+    .replace(/[.,;:!\?\/\\()\[\]{}"'«»„“”‚’`´~^|]/g, ' ')
+    .replace(/[-–—_]/g, ' ')
+    // Mehrfache Whitespaces reduzieren
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function levenshtein(a: string, b: string): number {
+  const n = a.length, m = b.length;
+  if (n === 0) return m;
+  if (m === 0) return n;
+  const dp = new Array(m + 1);
+  for (let j = 0; j <= m; j++) dp[j] = j;
+  for (let i = 1; i <= n; i++) {
+    let prev = dp[0];
+    dp[0] = i;
+    for (let j = 1; j <= m; j++) {
+      const temp = dp[j];
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[j] = Math.min(
+        dp[j] + 1,         // Löschung
+        dp[j - 1] + 1,     // Einfügung
+        prev + cost        // Ersetzung
+      );
+      prev = temp;
+    }
+  }
+  return dp[m];
+}
+
+function isAnswerCorrect(userInput: string, correctAnswer: string): boolean {
+  const ua = normalizeAnswer(userInput);
+  const ca = normalizeAnswer(correctAnswer);
+  if (ua === ca) return true;
+  // Kleine Tippfehler tolerieren (ca. 10% der Länge, mindestens 1)
+  const maxLen = Math.max(ua.length, ca.length);
+  const allowed = Math.max(1, Math.floor(maxLen * 0.1));
+  return levenshtein(ua, ca) <= allowed;
+}
+
 interface ListItem { id: number; name: string }
 interface Column { id: number; name: string; is_primary?: boolean }
 interface EntryField { column_id: number; value: string }
@@ -138,6 +192,11 @@ export default function VocabTest() {
           }
         }
       }
+      // Globales Mischen aller gesammelten Fragen (Fisher-Yates)
+      for (let i = all.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [all[i], all[j]] = [all[j], all[i]];
+      }
       setQuestions(all);
       setCurrent(0);
       setAnswer("");
@@ -154,9 +213,9 @@ export default function VocabTest() {
 
   const submit = () => {
     if (!questions[current]) return;
-    const correct = questions[current].a.trim().toLowerCase();
-    const isCorrect = answer.trim().toLowerCase() === correct;
-    if (isCorrect) setScore((s) => s + 1);
+    const correct = questions[current].a;
+    const ok = isAnswerCorrect(answer, correct);
+    if (ok) setScore((s) => s + 1);
     setUserAnswers((prev) => {
       const next = prev.slice();
       next[current] = answer;
@@ -197,7 +256,7 @@ export default function VocabTest() {
               <tbody>
                 {questions.map((qq, i) => {
                   const ua = (userAnswers[i] || "").trim();
-                  const ok = ua.toLowerCase() === qq.a.trim().toLowerCase();
+                  const ok = isAnswerCorrect(ua, qq.a);
                   return (
                     <tr key={i} className="border-t">
                       <td className="px-3 py-2">{i + 1}</td>
@@ -217,7 +276,7 @@ export default function VocabTest() {
           <div className="md:hidden space-y-3">
             {questions.map((qq, i) => {
               const ua = (userAnswers[i] || "").trim();
-              const ok = ua.toLowerCase() === qq.a.trim().toLowerCase();
+              const ok = isAnswerCorrect(ua, qq.a);
               return (
                 <div key={i} className="bg-white rounded-lg shadow p-4">
                   <div className="flex items-center justify-between text-sm text-gray-600">
@@ -251,7 +310,7 @@ export default function VocabTest() {
           {error && (
             <div className="bg-red-100 text-red-700 border border-red-400 p-2 rounded text-sm">{error}</div>
           )}
-          <p className="text-gray-600">Es wird Liste für Liste abgefragt. Quelle ist deine Auswahl; fehlt sie in einer Liste, wird deren Primärspalte verwendet.</p>
+          <p className="text-gray-600">Fragen werden über alle ausgewählten Listen global gemischt. Quelle ist deine Auswahl; fehlt sie in einer Liste, wird deren Primärspalte verwendet.</p>
           <div>
             <h2 className="font-semibold mb-2">Listen auswählen</h2>
             <div className="flex flex-wrap gap-2">
