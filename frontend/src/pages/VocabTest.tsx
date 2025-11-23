@@ -73,7 +73,9 @@ export default function VocabTest() {
     listName: string;
     sourceName: string;
     targetName: string;
+    candidates?: string[];
   }[]>([]);
+  const [testMode, setTestMode] = useState<'manual' | 'mc'>('manual');
   const [current, setCurrent] = useState(0);
   const [answer, setAnswer] = useState("");
   const [score, setScore] = useState(0);
@@ -81,6 +83,7 @@ export default function VocabTest() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [userAnswers, setUserAnswers] = useState<string[]>([]);
+  const [userCorrects, setUserCorrects] = useState<boolean[]>([]);
 
   useEffect(() => {
     getVocabLists().then((res) => setLists(res.data || [])).catch(() => {});
@@ -135,6 +138,7 @@ export default function VocabTest() {
         listName: string;
         sourceName: string;
         targetName: string;
+        candidates?: string[];
       }[] = [];
 
       // Liste für Liste abfragen (keine globale Durchmischung der Listen)
@@ -160,6 +164,17 @@ export default function VocabTest() {
         // Zielkandidaten: alle anderen Spalten in dieser Liste (außer Quelle)
         const targets = columns.filter((c) => c.id !== srcId);
 
+        // Kandidaten pro Zielspalte sammeln (einfach: alle Werte dieser Spalte in dieser Liste)
+        const candidateMap = new Map<number, Set<string>>();
+        for (const e of (entriesRes.data as Entry[])) {
+          for (const fv of e.field_values) {
+            const v = (fv.value || '').trim();
+            if (!v) continue;
+            if (!candidateMap.has(fv.column_id)) candidateMap.set(fv.column_id, new Set());
+            candidateMap.get(fv.column_id)!.add(v);
+          }
+        }
+
         // Reihenfolge innerhalb der Liste: wir können Einträge mischen, bleiben aber in der Liste
         const entries = (entriesRes.data as Entry[]).slice();
         for (let i = entries.length - 1; i > 0; i--) {
@@ -182,12 +197,14 @@ export default function VocabTest() {
           for (const t of shuffledTargets) {
             const tgt = (map.get(t.id) || "").trim();
             if (!tgt) continue;
+            const pool = Array.from((candidateMap.get(t.id) || new Set<string>())).filter(Boolean);
             all.push({
               q: src,
               a: tgt,
               listName,
               sourceName: srcColName!,
               targetName: t.name,
+              candidates: pool,
             });
           }
         }
@@ -203,6 +220,7 @@ export default function VocabTest() {
       setScore(0);
       setFinished(false);
       setUserAnswers([]);
+      setUserCorrects([]);
       setError("");
     } catch {
       setError("Fehler beim Laden der Vokabeln");
@@ -211,16 +229,48 @@ export default function VocabTest() {
     }
   };
 
-  const submit = () => {
+  function getChoices(pool: string[] | undefined, correct: string, size = 4) {
+    const set = Array.from(new Set((pool || []).filter((p) => p !== correct)));
+    // debug
+    // console.debug('getChoices pool', { pool, correct, set });
+    // shuffle
+    for (let i = set.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [set[i], set[j]] = [set[j], set[i]];
+    }
+    const picks = set.slice(0, Math.max(0, size - 1));
+    const choices = [...picks, correct];
+    // shuffle final choices
+    for (let i = choices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [choices[i], choices[j]] = [choices[j], choices[i]];
+    }
+    return choices;
+  }
+
+  const submit = (givenAnswer?: string) => {
     if (!questions[current]) return;
+    const used = typeof givenAnswer !== 'undefined' ? givenAnswer : answer;
     const correct = questions[current].a;
-    const ok = isAnswerCorrect(answer, correct);
+    // debug
+    // eslint-disable-next-line no-console
+    console.debug('submit', { idx: current, used, correct, used_eq_correct: used === correct, mode: testMode });
+    // For multiple-choice use strict normalized equality (no fuzzy tolerance)
+    const ok = testMode === 'mc'
+      ? normalizeAnswer(used) === normalizeAnswer(correct)
+      : isAnswerCorrect(used, correct);
     if (ok) setScore((s) => s + 1);
     setUserAnswers((prev) => {
       const next = prev.slice();
-      next[current] = answer;
+      next[current] = used;
       return next;
     });
+    setUserCorrects((prev) => {
+      const next = prev.slice();
+      next[current] = ok;
+      return next;
+    });
+    // clear local typed answer
     setAnswer("");
     if (current + 1 >= questions.length) setFinished(true);
     else setCurrent((c) => c + 1);
@@ -256,7 +306,7 @@ export default function VocabTest() {
               <tbody>
                 {questions.map((qq, i) => {
                   const ua = (userAnswers[i] || "").trim();
-                  const ok = isAnswerCorrect(ua, qq.a);
+                  const ok = typeof userCorrects[i] !== 'undefined' ? userCorrects[i] : isAnswerCorrect(ua, qq.a);
                   return (
                     <tr key={i} className="border-t">
                       <td className="px-3 py-2">{i + 1}</td>
@@ -276,7 +326,7 @@ export default function VocabTest() {
           <div className="md:hidden space-y-3">
             {questions.map((qq, i) => {
               const ua = (userAnswers[i] || "").trim();
-              const ok = isAnswerCorrect(ua, qq.a);
+              const ok = typeof userCorrects[i] !== 'undefined' ? userCorrects[i] : isAnswerCorrect(ua, qq.a);
               return (
                 <div key={i} className="bg-white rounded-lg shadow p-4">
                   <div className="flex items-center justify-between text-sm text-gray-600">
@@ -352,8 +402,28 @@ export default function VocabTest() {
             <p className="text-xs text-gray-500">Ziel ist automatisch „alle anderen Sprachen“ der jeweils ausgewählten Liste.</p>
           </div>
 
-          <div>
-            <button onClick={start} className="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700">Test starten</button>
+          <div className="space-y-3">
+            <div>
+              <h2 className="font-semibold mb-2">Modus wählen</h2>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setTestMode('manual')}
+                  className={`px-3 py-2 rounded border ${testMode === 'manual' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white hover:bg-gray-50'}`}
+                >
+                  Manuell (Text eingeben)
+                </button>
+                <button
+                  onClick={() => setTestMode('mc')}
+                  className={`px-3 py-2 rounded border ${testMode === 'mc' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white hover:bg-gray-50'}`}
+                >
+                  Multiple Choice (4 Auswahlmöglichkeiten)
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <button onClick={start} className="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700">Test starten</button>
+            </div>
           </div>
         </div>
       </div>
@@ -371,15 +441,31 @@ export default function VocabTest() {
           </div>
           <div className="text-sm text-gray-700">Quelle: <span className="font-medium">{q.sourceName}</span> → Ziel: <span className="font-medium">{q.targetName}</span></div>
           <div className="text-2xl font-semibold text-center">{q.q}</div>
-          <input
-            type="text"
-            value={answer}
-            onChange={(e) => setAnswer(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && submit()}
-            className="border rounded w-full px-3 py-2"
-            placeholder="Antwort eingeben..."
-          />
-          <button onClick={submit} className="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700 w-full">Bestätigen</button>
+          {testMode === 'manual' ? (
+            <>
+              <input
+                type="text"
+                value={answer}
+                onChange={(e) => setAnswer(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && submit()}
+                className="border rounded w-full px-3 py-2"
+                placeholder="Antwort eingeben..."
+              />
+              <button onClick={() => submit()} className="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700 w-full">Bestätigen</button>
+            </>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {getChoices(q.candidates, q.a, 4).map((choice, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => submit(choice)}
+                  className="border rounded px-3 py-3 text-left hover:bg-gray-50"
+                >
+                  {choice}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

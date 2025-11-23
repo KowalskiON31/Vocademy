@@ -107,3 +107,10 @@ site/
 docs/_build/
 *.manifest
 *.spec
+
+
+# =========================
+# 🔹 Distribution / Deploy
+# =========================
+deploy/systemd/send_to_pi.txt
+run.txt
