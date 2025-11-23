@@ -37,6 +37,26 @@
   padding: 2em;
 }
 
+/* multiline clamp fallback for browsers / Tailwind line-clamp utility */
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.break-words {
+  /* allow long words to break/wrap inside containers */
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 .read-the-docs {
   color: #888;
 }

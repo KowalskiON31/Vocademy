@@ -21,6 +21,7 @@ export default function Dashboard() {
   const [description, setDescription] = useState("");
   const [translationsCount, setTranslationsCount] = useState(2);
   const [translationNames, setTranslationNames] = useState<string[]>(["", ""]);
+  const [translationsCountInput, setTranslationsCountInput] = useState(String(2));
 
   const [editOpen, setEditOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
@@ -107,17 +108,19 @@ export default function Dashboard() {
           <div className="mb-3 bg-emerald-100 text-emerald-700 border border-emerald-400 p-2 rounded text-sm">{notice}</div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="flex flex-col gap-4">
           {lists.map((l) => (
-            <div key={l.id} className="bg-white border rounded-lg p-4 hover:shadow transition transform hover:-translate-y-0.5">
+            <div key={l.id} className="bg-white border rounded-lg p-4 hover:shadow transition transform hover:-translate-y-0.5 flex flex-col justify-between w-full">
               <div className="flex items-start justify-between gap-2">
-                <div onClick={() => navigate(`/list/${l.id}`)} className="cursor-pointer">
-                  <div className="font-semibold">{l.name}</div>
+                <div className="flex-1 min-w-0">
+                  <button onClick={() => navigate(`/list/${l.id}`)} className="font-semibold text-left w-full text-gray-900 break-words text-base" title={l.name}>
+                    {l.name}
+                  </button>
                   {l.description && (
-                    <div className="text-sm text-gray-600 mt-1 line-clamp-2">{l.description}</div>
+                    <div className="text-sm text-gray-600 mt-1 line-clamp-3" title={l.description}>{l.description}</div>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 ml-3">
                   <button onClick={() => openEdit(l)} className="text-sm px-2 py-1 rounded hover:bg-gray-100">Bearbeiten</button>
                   <button onClick={() => handleDelete(l.id)} className="text-sm text-red-600 px-2 py-1 rounded hover:bg-red-50">Löschen</button>
                 </div>
@@ -149,11 +152,18 @@ export default function Dashboard() {
                 type="number"
                 min={1}
                 max={6}
-                className="border rounded px-3 py-2 w-28"
-                value={translationsCount}
+                inputMode="numeric"
+                className="border rounded px-3 py-2 w-28 sm:w-32"
+                value={translationsCountInput}
                 onChange={(e) => {
-                  const v = Math.max(1, Math.min(6, Number(e.target.value)));
+                  // keep raw input to avoid jumping while typing on mobile
+                  setTranslationsCountInput(e.target.value);
+                }}
+                onBlur={() => {
+                  const parsed = Number(translationsCountInput);
+                  const v = Number.isFinite(parsed) && parsed >= 1 ? Math.min(6, Math.max(1, Math.floor(parsed))) : 1;
                   setTranslationsCount(v);
+                  setTranslationsCountInput(String(v));
                   setTranslationNames((prev) => {
                     const next = prev.slice();
                     next.length = v;
