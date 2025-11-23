@@ -3,6 +3,8 @@ import { useParams } from "react-router-dom";
 import api from "../services/api";
 import { updateEntry, deleteEntry } from "../services/vocab";
 import Navbar from "../components/Navbar";
+import Toaster from "../components/Toaster";
+import type { Toast } from "../components/Toaster";
 
 interface Column {
   id: number;
@@ -24,6 +26,15 @@ export default function VocabListFlexible() {
   const [newValues, setNewValues] = useState<Record<number, string>>({});
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editValues, setEditValues] = useState<Record<number, string>>({});
+  const [deletePendingEntryId, setDeletePendingEntryId] = useState<number | null>(null);
+  const [toasts, setToasts] = useState<Toast[]>([]);
+
+  const addToast = (message: string, type: Toast["type"] = "info", ttl = 3000) => {
+    const id = String(Date.now()) + Math.random().toString(16).slice(2, 8);
+    const t: Toast = { id, message, type };
+    setToasts((s) => [t, ...s]);
+    if (ttl) setTimeout(() => setToasts((s) => s.filter((x) => x.id !== id)), ttl);
+  };
 
   useEffect(() => {
     api.get(`/vocablist/${id}`).then((res) => {
@@ -43,6 +54,7 @@ export default function VocabListFlexible() {
     const res = await api.post("/vocab/entries", data);
     setEntries((prev) => [...prev, res.data]);
     setNewValues({});
+    addToast("Eintrag erstellt", "success");
   };
 
   const startEdit = (entry: Entry) => {
@@ -66,14 +78,21 @@ export default function VocabListFlexible() {
   };
 
   const removeEntry = async (entryId: number) => {
-    if (!confirm("Eintrag wirklich löschen?")) return;
-    await deleteEntry(entryId);
-    setEntries((prev) => prev.filter((e) => e.id !== entryId));
+    try {
+      await deleteEntry(entryId);
+      setEntries((prev) => prev.filter((e) => e.id !== entryId));
+      addToast("Eintrag gelöscht", "success");
+    } catch {
+      addToast("Löschen fehlgeschlagen", "error");
+    } finally {
+      setDeletePendingEntryId(null);
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
+      <Toaster toasts={toasts} onRemove={(id) => setToasts((s) => s.filter((t) => t.id !== id))} />
       <div className="max-w-6xl mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold">Vokabeln verwalten</h1>
@@ -113,7 +132,14 @@ export default function VocabListFlexible() {
                 ) : (
                   <>
                     <button onClick={() => startEdit(entry)} className="px-3 py-1 rounded hover:bg-gray-100">Bearbeiten</button>
-                    <button onClick={() => removeEntry(entry.id)} className="text-red-600 px-3 py-1 rounded hover:bg-red-50">Löschen</button>
+                    {deletePendingEntryId === entry.id ? (
+                      <>
+                        <button onClick={() => removeEntry(entry.id)} className="text-red-600 px-3 py-1 rounded bg-red-50">Ja, löschen</button>
+                        <button onClick={() => setDeletePendingEntryId(null)} className="px-3 py-1 rounded hover:bg-gray-100">Abbrechen</button>
+                      </>
+                    ) : (
+                      <button onClick={() => setDeletePendingEntryId(entry.id)} className="text-red-600 px-3 py-1 rounded hover:bg-red-50">Löschen</button>
+                    )}
                   </>
                 )}
               </div>
@@ -179,12 +205,19 @@ export default function VocabListFlexible() {
                         <button onClick={saveEdit} className="bg-emerald-600 text-white px-3 py-1 rounded hover:bg-emerald-700 mr-2">Speichern</button>
                         <button onClick={cancelEdit} className="px-3 py-1 rounded hover:bg-gray-100">Abbrechen</button>
                       </>
-                    ) : (
-                      <>
-                        <button onClick={() => startEdit(entry)} className="px-3 py-1 rounded hover:bg-gray-100 mr-2">Bearbeiten</button>
-                        <button onClick={() => removeEntry(entry.id)} className="text-red-600 px-3 py-1 rounded hover:bg-red-50">Löschen</button>
-                      </>
-                    )}
+                        ) : (
+                          <>
+                            <button onClick={() => startEdit(entry)} className="px-3 py-1 rounded hover:bg-gray-100 mr-2">Bearbeiten</button>
+                            {deletePendingEntryId === entry.id ? (
+                              <>
+                                <button onClick={() => removeEntry(entry.id)} className="text-red-600 px-3 py-1 rounded bg-red-50 mr-2">Ja, löschen</button>
+                                <button onClick={() => setDeletePendingEntryId(null)} className="px-3 py-1 rounded hover:bg-gray-100">Abbrechen</button>
+                              </>
+                            ) : (
+                              <button onClick={() => setDeletePendingEntryId(entry.id)} className="text-red-600 px-3 py-1 rounded hover:bg-red-50">Löschen</button>
+                            )}
+                          </>
+                        )}
                   </td>
                 </tr>
               ))}

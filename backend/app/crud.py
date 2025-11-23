@@ -124,7 +124,8 @@ def create_vocab_list(db: Session, vocablist_data: schemas.VocabListCreate, user
     new_vocab_list = models.VocabList(
         name=vocablist_data.name,
         description=vocablist_data.description,
-        user_id=user_id
+        user_id=user_id,
+        group_id=(vocablist_data.group_id if getattr(vocablist_data, 'group_id', None) else None)
     )
     db.add(new_vocab_list)
     db.flush()  # Get ID for columns
@@ -144,6 +145,55 @@ def create_vocab_list(db: Session, vocablist_data: schemas.VocabListCreate, user
     db.commit()
     db.refresh(new_vocab_list)
     return new_vocab_list
+
+
+# ============== GROUPS ==============
+def create_group(db: Session, group_data: schemas.VocabGroupCreate, user_id: int):
+    new_group = models.VocabGroup(
+        name=group_data.name,
+        description=group_data.description,
+        user_id=user_id
+    )
+    db.add(new_group)
+    db.commit()
+    db.refresh(new_group)
+    return new_group
+
+
+def get_groups_by_user(db: Session, user_id: int):
+    return db.query(models.VocabGroup).filter(models.VocabGroup.user_id == user_id).all()
+
+
+def get_group(db: Session, group_id: int):
+    return db.query(models.VocabGroup).filter(models.VocabGroup.id == group_id).first()
+
+
+def update_group(db: Session, group_id: int, data: schemas.VocabGroupCreate, user_id: int):
+    grp = get_group(db, group_id)
+    if not grp:
+        return None
+    if grp.user_id != user_id:
+        return None
+    if getattr(data, 'name', None):
+        grp.name = data.name
+    if getattr(data, 'description', None) is not None:
+        grp.description = data.description
+    db.commit()
+    db.refresh(grp)
+    return grp
+
+
+def delete_group(db: Session, group_id: int, user_id: int):
+    grp = get_group(db, group_id)
+    if not grp:
+        return False
+    if grp.user_id != user_id:
+        return False
+    # Reassign lists to no group (NULL) before deleting group
+    db.query(models.VocabList).filter(models.VocabList.group_id == group_id).update({models.VocabList.group_id: None})
+    db.delete(grp)
+    db.commit()
+    return True
 
 
 def get_vocab_list_by_user(db: Session, user_id: int):
@@ -179,6 +229,9 @@ def update_vocab_list(db: Session, vocablist_id: int, data: schemas.VocabListUpd
         vocab_list.name = data.name
     if data.description is not None:
         vocab_list.description = data.description
+    # allow moving list between groups (nullable)
+    if getattr(data, 'group_id', None) is not None:
+        vocab_list.group_id = data.group_id
     
     db.commit()
     db.refresh(vocab_list)

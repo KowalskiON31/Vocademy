@@ -55,6 +55,53 @@ def create_vocablist(
     return crud.create_vocab_list(db, item, user.id)
 
 
+# ============== VOCAB GROUPS ==============
+@router.post("/vocabgroup/", response_model=schemas.VocabGroup)
+def create_vocabgroup(
+    item: schemas.VocabGroupCreate,
+    db: Session = Depends(get_db),
+    token: str = Depends(oauth2_scheme)
+):
+    user = get_current_user(token, db)
+    return crud.create_group(db, item, user.id)
+
+
+@router.get("/vocabgroup/", response_model=list[schemas.VocabGroup])
+def get_vocabgroups(
+    db: Session = Depends(get_db),
+    token: str = Depends(oauth2_scheme)
+):
+    user = get_current_user(token, db)
+    return crud.get_groups_by_user(db, user.id)
+
+
+@router.put("/vocabgroup/{group_id}", response_model=schemas.VocabGroup)
+def update_vocabgroup(
+    group_id: int,
+    item: schemas.VocabGroupCreate,
+    db: Session = Depends(get_db),
+    token: str = Depends(oauth2_scheme)
+):
+    user = get_current_user(token, db)
+    grp = crud.update_group(db, group_id, item, user.id)
+    if not grp:
+        raise HTTPException(status_code=404, detail="Gruppe nicht gefunden oder kein Zugriff")
+    return grp
+
+
+@router.delete("/vocabgroup/{group_id}")
+def delete_vocabgroup(
+    group_id: int,
+    db: Session = Depends(get_db),
+    token: str = Depends(oauth2_scheme)
+):
+    user = get_current_user(token, db)
+    ok = crud.delete_group(db, group_id, user.id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Gruppe nicht gefunden oder kein Zugriff")
+    return {"message": "Gruppe gelöscht"}
+
+
 @router.get("/vocablist/", response_model=list[schemas.VocabList])
 def get_all_vocablists(
     db: Session = Depends(get_db),

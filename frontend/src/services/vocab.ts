@@ -12,7 +12,8 @@ export async function createVocabList(
   name: string,
   description: string,
   translationsCount: number,
-  translationNames?: string[]
+  translationNames?: string[],
+  groupId?: number | null
 ) {
   const columns = [] as Array<any>;
   columns.push({ name: "Begriff", column_type: "custom", position: 0, is_primary: true });
@@ -21,8 +22,17 @@ export async function createVocabList(
     const colName = translationNames?.[i] ?? `Übersetzung ${idx}`;
     columns.push({ name: colName, column_type: "custom", position: idx });
   }
-  const payload = { name, description, columns };
+  const payload: any = { name, description, columns };
+  if (groupId) payload.group_id = groupId;
   return api.post("/vocablist/", payload);
+}
+
+export async function getVocabGroups() {
+  return api.get("/vocabgroup/");
+}
+
+export async function createVocabGroup(name: string, description?: string) {
+  return api.post("/vocabgroup/", { name, description });
 }
 
 export async function createEntry(
@@ -42,9 +52,17 @@ export async function getEntriesByList(listId: number) {
 
 export async function updateVocabList(
   id: number,
-  data: { name?: string; description?: string }
+  data: { name?: string; description?: string; group_id?: number | null }
 ) {
   return api.put(`/vocablist/${id}`, data);
+}
+
+export async function updateVocabGroup(id: number, data: { name?: string; description?: string }) {
+  return api.put(`/vocabgroup/${id}`, data);
+}
+
+export async function deleteVocabGroup(id: number) {
+  return api.delete(`/vocabgroup/${id}`);
 }
 
 export async function deleteVocabList(id: number) {
