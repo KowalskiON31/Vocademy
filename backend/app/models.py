@@ -24,8 +24,10 @@ class VocabList(Base):
     name = Column(String)
     description = Column(Text, nullable=True)
     user_id = Column(Integer, ForeignKey("users.id"))
+    group_id = Column(Integer, ForeignKey("vocab_groups.id"), nullable=True)
 
     owner = relationship("User", back_populates="lists")
+    group = relationship("VocabGroup", back_populates="lists")
     columns = relationship("ListColumn", back_populates="vocab_list", cascade="all, delete-orphan", order_by="ListColumn.position")
     entries = relationship("VocabEntry", back_populates="vocab_list", cascade="all, delete-orphan")
 
@@ -64,6 +66,17 @@ class ListColumn(Base):
 
     vocab_list = relationship("VocabList", back_populates="columns")
     field_values = relationship("EntryFieldValue", back_populates="column", cascade="all, delete-orphan")
+
+
+class VocabGroup(Base):
+    __tablename__ = "vocab_groups"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+
+    lists = relationship("VocabList", back_populates="group")
 
 
 class VocabEntry(Base):

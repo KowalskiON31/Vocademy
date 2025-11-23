@@ -64,16 +64,34 @@ class VocabListBase(BaseModel):
 
 class VocabListCreate(VocabListBase):
     columns: List[ListColumnCreate]
+    group_id: Optional[int] = None
 
 class VocabListUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
+    group_id: Optional[int] = None
 
 class VocabList(VocabListBase):
     id: int
     user_id: int
+    group_id: Optional[int] = None
     columns: List[ListColumn] = []
     entries: List[VocabEntry] = []
+
+    model_config = {"from_attributes": True}
+
+
+# ============== VOCAB GROUPS ==============
+class VocabGroupBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+
+class VocabGroupCreate(VocabGroupBase):
+    pass
+
+class VocabGroup(VocabGroupBase):
+    id: int
+    user_id: int
 
     model_config = {"from_attributes": True}
 
