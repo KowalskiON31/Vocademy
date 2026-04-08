@@ -37,6 +37,14 @@ assets_dir = frontend_dist / "assets"
 if assets_dir.exists():
     app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="assets")
 
+# Serve static files from dist root (favicon, etc.)
+@app.get("/vocademy.svg", include_in_schema=False)
+def favicon():
+    svg_file = frontend_dist / "vocademy.svg"
+    if svg_file.exists():
+        return FileResponse(str(svg_file), media_type="image/svg+xml")
+    raise HTTPException(status_code=404, detail="Not Found")
+
 # Root serves index.html if present (SPA), else backend info
 @app.get("/", include_in_schema=False)
 def root_html():

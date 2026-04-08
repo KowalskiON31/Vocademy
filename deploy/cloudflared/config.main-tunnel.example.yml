@@ -1,0 +1,13 @@
+﻿tunnel: main-tunnel
+credentials-file: /home/kowalski/.cloudflared/7404cecc-584e-4e30-b68a-d77d2a8f269d.json
+
+ingress:
+  - hostname: quiz.onicssolutions.cc
+    service: http://localhost:5000
+  - hostname: portfolio.onicssolutions.cc
+    service: http://localhost:8080
+  - hostname: blog.onicssolutions.cc
+    service: http://localhost:9090
+  - hostname: vocademy.onicssolutions.cc
+    service: http://localhost:8000
+  - service: http_status:404

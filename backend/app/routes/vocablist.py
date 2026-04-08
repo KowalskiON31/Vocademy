@@ -198,23 +198,57 @@ def add_column_to_list(
     return new_column
 
 
+@router.put("/vocablist/columns/{column_id}", response_model=schemas.ListColumn)
+def update_column(
+    column_id: int,
+    column_data: schemas.ListColumnUpdate,
+    db: Session = Depends(get_db),
+    token: str = Depends(oauth2_scheme)
+):
+    """Aktualisiert eine Spalte (z.B. Name ändern)"""
+    user = get_current_user(token, db)
+
+    column = db.query(models.ListColumn).filter(models.ListColumn.id == column_id).first()
+    if not column:
+        raise HTTPException(status_code=404, detail="Spalte nicht gefunden")
+
+    # Check ownership via vocab_list
+    vocab_list = crud.get_vocab_list(db, column.vocab_list_id)
+    if vocab_list.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Keine Berechtigung")
+
+    # Update fields
+    if column_data.name is not None:
+        column.name = column_data.name
+    if column_data.column_type is not None:
+        column.column_type = column_data.column_type
+    if column_data.language_code is not None:
+        column.language_code = column_data.language_code
+    if column_data.is_primary is not None:
+        column.is_primary = column_data.is_primary
+
+    db.commit()
+    db.refresh(column)
+    return column
+
+
 @router.delete("/vocablist/columns/{column_id}")
 def delete_column(
     column_id: int,
     db: Session = Depends(get_db),
     token: str = Depends(oauth2_scheme)
 ):
-    """LÃ¶scht eine Spalte (und alle zugehÃ¶rigen Werte)"""
+    """Löscht eine Spalte (und alle zugehörigen Werte)"""
     user = get_current_user(token, db)
-    
+
     column = db.query(models.ListColumn).filter(models.ListColumn.id == column_id).first()
     if not column:
         raise HTTPException(status_code=404, detail="Spalte nicht gefunden")
-    
+
     # Check ownership via vocab_list
     vocab_list = crud.get_vocab_list(db, column.vocab_list_id)
     if vocab_list.user_id != user.id:
         raise HTTPException(status_code=403, detail="Keine Berechtigung")
-    
+
     crud.delete_column(db, column_id)
-    return {"message": "Spalte wurde gelÃ¶scht"}
+    return {"message": "Spalte wurde gelöscht"}

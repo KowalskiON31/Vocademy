@@ -107,6 +107,7 @@ site/
 docs/_build/
 *.manifest
 *.spec
+frontend/dist/
 
 
 # =========================
@@ -114,3 +115,8 @@ docs/_build/
 # =========================
 deploy/systemd/send_to_pi.txt
 run.txt
+
+# Misc
+.claude/
+nul
+null

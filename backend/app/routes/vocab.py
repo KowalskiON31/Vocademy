@@ -154,3 +154,40 @@ def delete_entry(
     
     crud.delete_vocab_entry(db, entry_id)
     return {"message": "Eintrag gelÃ¶scht"}
+
+
+@router.patch("/vocab/entries/{entry_id}/level")
+def update_entry_level(
+    entry_id: int,
+    is_correct: bool,
+    db: Session = Depends(get_db),
+    token: str = Depends(oauth2_scheme)
+):
+    """
+    Aktualisiert das Level eines Vokabeleintrags basierend auf der Antwort.
+
+    - Richtige Antwort (is_correct=true): Level +1 (max: 5)
+    - Falsche Antwort (is_correct=false): Level -1 (min: 1)
+
+    Query Parameter:
+    - is_correct: bool (true oder false)
+    """
+    user = get_current_user(token, db)
+
+    entry = crud.get_vocab_entry(db, entry_id)
+    if not entry:
+        raise HTTPException(status_code=404, detail="Eintrag nicht gefunden")
+
+    if entry.vocab_list.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Keine Berechtigung für diesen Eintrag")
+
+    # Level-Update-Logik
+    if is_correct:
+        entry.level = min(entry.level + 1, 5)  # Max 5
+    else:
+        entry.level = max(entry.level - 1, 1)  # Min 1
+
+    db.commit()
+    db.refresh(entry)
+
+    return {"entry_id": entry.id, "new_level": entry.level, "is_correct": is_correct}

@@ -7,6 +7,7 @@ from app.auth import (
     get_current_user_from_token, admin_required
 )
 from pydantic import BaseModel
+import app.monitoring_logger as monitoring
 
 router = APIRouter()
 
@@ -21,7 +22,9 @@ def get_db():
 # ============== Register & Login ==============
 @router.post("/register/", response_model=schemas.User)
 def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    return crud.create_user(db, user)
+    new_user = crud.create_user(db, user)
+    monitoring.auth("User registriert", user.username)
+    return new_user
 
 
 @router.post("/login/")
@@ -31,9 +34,11 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         raise HTTPException(status_code=401, detail="Ungültiger Benutzername oder Passwort")
 
     if not user.is_active:
+        monitoring.warn("Login verweigert – Account deaktiviert", user.username)
         raise HTTPException(status_code=403, detail="Benutzerkonto ist deaktiviert")
 
     access_token = create_access_token(data={"sub": user.username})
+    monitoring.auth("User eingeloggt", user.username)
     return {"access_token": access_token, "token_type": "bearer"}
 
 

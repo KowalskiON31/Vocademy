@@ -83,3 +83,26 @@ export async function updateEntry(
 export async function deleteEntry(entryId: number) {
   return api.delete(`/vocab/entries/${entryId}`);
 }
+
+export async function updateEntryLevel(entryId: number, isCorrect: boolean) {
+  return api.patch(`/vocab/entries/${entryId}/level?is_correct=${isCorrect}`);
+}
+
+// ============== COLUMN MANAGEMENT ==============
+export async function addColumnToList(
+  vocabListId: number,
+  column: { name: string; column_type?: string; position?: number; language_code?: string; is_primary?: boolean }
+) {
+  return api.post(`/vocablist/${vocabListId}/columns`, column);
+}
+
+export async function deleteColumn(columnId: number) {
+  return api.delete(`/vocablist/columns/${columnId}`);
+}
+
+export async function updateColumn(
+  columnId: number,
+  data: { name?: string; column_type?: string; language_code?: string; is_primary?: boolean }
+) {
+  return api.put(`/vocablist/columns/${columnId}`, data);
+}

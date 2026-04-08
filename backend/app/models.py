@@ -88,9 +88,13 @@ class VocabEntry(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     vocab_list_id = Column(Integer, ForeignKey("vocab_lists.id"))
-    
+
     # Optional: Position für manuelle Sortierung
     position = Column(Integer, default=0)
+
+    # Level System: 1-5, startet bei 1
+    # Richtige Antwort: +1, Falsche Antwort: -1 (min: 1, max: 5)
+    level = Column(Integer, default=1)
 
     vocab_list = relationship("VocabList", back_populates="entries")
     field_values = relationship("EntryFieldValue", back_populates="entry", cascade="all, delete-orphan")

@@ -11,6 +11,12 @@ class ListColumnBase(BaseModel):
 class ListColumnCreate(ListColumnBase):
     position: Optional[int] = 0
 
+class ListColumnUpdate(BaseModel):
+    name: Optional[str] = None
+    column_type: Optional[str] = None
+    language_code: Optional[str] = None
+    is_primary: Optional[bool] = None
+
 class ListColumn(ListColumnBase):
     id: int
     vocab_list_id: int
@@ -51,6 +57,7 @@ class VocabEntry(VocabEntryBase):
     id: int
     vocab_list_id: int
     position: int
+    level: int = 1
     field_values: List[EntryFieldValue] = []
 
     model_config = {"from_attributes": True}

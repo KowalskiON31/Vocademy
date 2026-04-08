@@ -1,0 +1,12 @@
+﻿[Unit]
+Description=Cloudflared Main Tunnel
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/bin/cloudflared --config /home/kowalski/.cloudflared/config.yml tunnel run main-tunnel
+User=kowalski
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
